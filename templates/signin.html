@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Smart Health Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #1e5799, #207cca);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        width: 900px;
+        background: #f5f7fa;
+        border-radius: 12px;
+        display: flex;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .left {
+        width: 50%;
+        background: #eaf2fb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .left img {
+        width: 100%;
+        max-width: 350px;
+      }
+
+      .right {
+        width: 50%;
+        padding: 40px;
+        background: white;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        color: #2c3e50;
+      }
+
+      p {
+        color: #7f8c8d;
+        font-size: 14px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        margin-top: 15px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        background: #1e5799;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #163f73;
+      }
+
+      .links {
+        margin-top: 15px;
+        font-size: 13px;
+        text-align: right;
+      }
+
+      .links a {
+        text-decoration: none;
+        color: #1e5799;
+      }
+
+      .signup {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: gray;
+      }
+
+      .flash {
+        color: red;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- LEFT IMAGE -->
+      <div class="left">
+        <img
+          src="https://i.pinimg.com/originals/e0/47/84/e04784fa62bc6c7b80d44a708cb7d43a.jpg"
+          alt="Doctor"
+        />
+      </div>
+
+      <!-- RIGHT FORM -->
+      <div class="right">
+        <h2>Welcome Back!</h2>
+        <p>Login to continue to Smart Health Assessment System</p>
+
+        <form method="POST" action="/signin">
+          <input
+            type="text"
+            name="user"
+            placeholder="Enter your username"
+            required
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+          />
+
+          <button type="submit">Login</button>
+        </form>
+
+        {% with messages = get_flashed_messages() %} {% if messages %}
+        <div class="flash">{{ messages[0] }}</div>
+        {% endif %} {% endwith %}
+
+        <div class="signup">
+          Don't have an account? <a href="/logon">Sign Up</a>
+        </div>
+
+        <div class="footer">Privacy Policy | Terms of Service | Contact Us</div>
+      </div>
+    </div>
+  </body>
+</html>

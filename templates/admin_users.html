@@ -1,0 +1,201 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>All Users</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: #f4f7fb;
+      }
+
+      /* LAYOUT */
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        background: linear-gradient(to bottom, #1e5799, #207cca);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      /* HEADER */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .title {
+        margin-bottom: 20px;
+      }
+
+      /* TABLE */
+      .table-container {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        background: #1e5799;
+        color: white;
+        padding: 12px;
+        text-align: left;
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+      }
+
+      /* BADGE */
+      .badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        color: white;
+      }
+
+      .male {
+        background: #007bff;
+      }
+      .female {
+        background: #e83e8c;
+      }
+      .other {
+        background: #6c757d;
+      }
+
+      /* BUTTON */
+      .btn {
+        display: inline-block;
+        margin-top: 15px;
+        padding: 10px 15px;
+        background: #1e5799;
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+      }
+
+      .btn:hover {
+        background: #163f73;
+      }
+
+      /* MOBILE */
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+
+      <div class="sidebar">
+        <h3>⚙️ Admin Panel</h3>
+
+        <a href="/admin"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="/admin/users"><i class="fas fa-users"></i> Users</a>
+        <a href="/admin/history"><i class="fas fa-clock"></i> History</a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+
+      <!-- MAIN -->
+
+      <div class="main">
+        <h2 class="title">👥 All Users</h2>
+
+        <div class="table-container">
+          <table>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Age</th>
+              <th>Gender</th>
+            </tr>
+
+            {% for u in users %}
+            <tr>
+              <td>{{ u[0] }}</td>
+              <td>{{ u[1] }}</td>
+              <td>{{ u[2] }}</td>
+              <td>{{ u[3] }}</td>
+
+              <td>
+                {% if u[4] == "Male" %}
+                <span class="badge male">Male</span>
+                {% elif u[4] == "Female" %}
+                <span class="badge female">Female</span>
+                {% else %}
+                <span class="badge other">Other</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+
+        <a href="/admin" class="btn">⬅ Back to Dashboard</a>
+      </div>
+    </div>
+  </body>
+</html>

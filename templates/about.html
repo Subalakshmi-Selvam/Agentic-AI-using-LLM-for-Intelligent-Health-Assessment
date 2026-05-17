@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>About</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- FONT AWESOME -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+      }
+
+      .container {
+        display: flex;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        height: 100vh;
+        background: linear-gradient(to bottom, #1e5799, #207cca);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* BOX */
+      .box {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+
+      /* FLEX */
+      .flex {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .flex img {
+        width: 250px;
+      }
+
+      /* ICON LIST */
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      ul li {
+        margin: 8px 0;
+      }
+
+      /* CARDS */
+      .cards {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .card {
+        flex: 1;
+        background: #f8fbff;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .card i {
+        font-size: 28px;
+        color: #1e5799;
+        margin-bottom: 10px;
+      }
+
+      /* STEPS */
+      .steps {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .step {
+        flex: 1;
+        background: #eef5ff;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .step i {
+        font-size: 20px;
+        margin-bottom: 5px;
+        color: #1e5799;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: gray;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      {%include "nav.html"%}
+      <!-- MAIN -->
+      <div class="main">
+        <div class="header">
+          <h2>
+            <i class="fas fa-heartbeat"></i> About Our AI Smart Health System
+          </h2>
+        </div>
+
+        <!-- INTRO -->
+        <div class="box flex">
+          <div>
+            <h3>The AI Smart Health Assessment System</h3>
+            <p>
+              This system analyzes symptoms and provides health suggestions
+              using AI.
+            </p>
+
+            <h4><i class="fas fa-lightbulb"></i> Why We Built This</h4>
+            <ul>
+              <li>
+                <i class="fas fa-check-circle"></i> Early symptom understanding
+              </li>
+              <li><i class="fas fa-check-circle"></i> Accessible guidance</li>
+              <li><i class="fas fa-check-circle"></i> LLM + RAG healthcare</li>
+              <li><i class="fas fa-check-circle"></i> Advanced AI system</li>
+            </ul>
+          </div>
+
+          <img
+            src="https://i.pinimg.com/originals/e0/47/84/e04784fa62bc6c7b80d44a708cb7d43a.jpg"
+            alt="Doctor"
+          />
+        </div>
+
+        <!-- TECHNOLOGIES -->
+        <div class="box">
+          <h3><i class="fas fa-microchip"></i> Technologies We Use</h3>
+
+          <div class="cards">
+            <div class="card">
+              <i class="fab fa-python"></i>
+              <h4>Python</h4>
+              <p>Backend AI processing</p>
+            </div>
+
+            <div class="card">
+              <i class="fas fa-link"></i>
+              <h4>LangChain</h4>
+              <p>RAG architecture</p>
+            </div>
+
+            <div class="card">
+              <i class="fas fa-database"></i>
+              <h4>FAISS</h4>
+              <p>Vector similarity search</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOW IT WORKS -->
+        <div class="box">
+          <h3><i class="fas fa-cogs"></i> How It Works</h3>
+
+          <div class="steps">
+            <div class="step">
+              <i class="fas fa-user"></i><br />
+              User Input
+            </div>
+
+            <div class="step">
+              <i class="fas fa-search"></i><br />
+              Processing
+            </div>
+
+            <div class="step">
+              <i class="fas fa-database"></i><br />
+              Data Retrieval
+            </div>
+
+            <div class="step">
+              <i class="fas fa-brain"></i><br />
+              AI Analysis
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">© 2024 Smart Health Assessment System</div>
+      </div>
+    </div>
+  </body>
+</html>

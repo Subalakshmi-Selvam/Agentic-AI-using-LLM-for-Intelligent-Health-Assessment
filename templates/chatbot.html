@@ -1,0 +1,287 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+      }
+
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        background: linear-gradient(to bottom, #1e5799, #207cca);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      /* HEADER */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .search {
+        width: 250px;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      /* HERO */
+      .hero {
+        background: #eaf2fb;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .hero img {
+        width: 180px;
+      }
+
+      /* CARDS */
+      .cards {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .card {
+        flex: 1;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .card i {
+        font-size: 28px;
+        color: #1e5799;
+      }
+
+      /* CHAT */
+      .chat-box {
+        margin-top: 20px;
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+      }
+
+      .chat-container {
+        flex: 1;
+        overflow-y: auto;
+        margin-bottom: 10px;
+      }
+
+      /* MESSAGES */
+      .message {
+        padding: 10px;
+        margin: 6px 0;
+        border-radius: 8px;
+        max-width: 70%;
+      }
+
+      .user {
+        background: #1e5799;
+        color: white;
+        margin-left: auto;
+      }
+
+      .bot {
+        background: #eaf2fb;
+      }
+
+      /* INPUT */
+      .input-area {
+        display: flex;
+        gap: 10px;
+      }
+
+      .input-area input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      .input-area button {
+        padding: 10px 15px;
+        border: none;
+        background: #1e5799;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      /* FOOTER */
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: gray;
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .cards {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      {%include "nav.html"%}
+
+      <!-- MAIN CONTENT -->
+      <div class="main">
+        <!-- HEADER -->
+        <div class="header">
+          <h2>Dashboard</h2>
+          <input class="search" type="text" placeholder="Search..." />
+        </div>
+
+        <!-- HERO -->
+        <div class="hero">
+          <div>
+            <h3>Smart Health Assistant</h3>
+            <p>Chat with AI about skin diseases and health issues</p>
+          </div>
+          <img src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" />
+        </div>
+
+        <!-- CARDS -->
+        <div class="cards">
+          <div class="card">
+            <i class="fas fa-user"></i>
+            <h4>Profile</h4>
+          </div>
+          <div class="card">
+            <i class="fas fa-brain"></i>
+            <h4>AI Analysis</h4>
+          </div>
+          <div class="card">
+            <i class="fas fa-file"></i>
+            <h4>Reports</h4>
+          </div>
+        </div>
+
+        <!-- CHAT -->
+        <div class="chat-box">
+          <h3>AI Chat</h3>
+
+          <div id="chat" class="chat-container"></div>
+
+          <div class="input-area">
+            <input
+              id="msg"
+              type="text"
+              placeholder="Ask about skin disease..."
+            />
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+
+        <div class="footer">© 2026 Smart Health System</div>
+      </div>
+    </div>
+
+    <script>
+      async function sendMessage() {
+        let input = document.getElementById("msg");
+        let chat = document.getElementById("chat");
+
+        let text = input.value.trim();
+        if (!text) return;
+
+        let userDiv = document.createElement("div");
+        userDiv.className = "message user";
+        userDiv.innerText = text;
+        chat.appendChild(userDiv);
+
+        input.value = "";
+
+        let botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        botDiv.innerText = "Typing...";
+        chat.appendChild(botDiv);
+
+        chat.scrollTop = chat.scrollHeight;
+
+        try {
+          let res = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text }),
+          });
+
+          let data = await res.json();
+          botDiv.innerText = data.reply;
+        } catch (err) {
+          botDiv.innerText = "⚠️ Server error";
+        }
+
+        chat.scrollTop = chat.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

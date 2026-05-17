@@ -1,0 +1,7 @@
+*.h5
+*.db
+*.pdf
+static/uploads/
+faiss_index/
+__pycache__/
+.env

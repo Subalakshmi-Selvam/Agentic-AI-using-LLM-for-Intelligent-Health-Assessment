@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #1e5799, #207cca);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      /* MAIN CONTAINER */
+      .container {
+        width: 950px;
+        background: #f5f7fa;
+        border-radius: 12px;
+        display: flex;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      /* LEFT SIDE */
+      .left {
+        width: 50%;
+        background: #eaf2fb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .left img {
+        width: 100%;
+        max-width: 360px;
+      }
+
+      /* RIGHT SIDE */
+      .right {
+        width: 50%;
+        padding: 40px;
+        background: white;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        color: #2c3e50;
+      }
+
+      p {
+        color: #7f8c8d;
+        font-size: 14px;
+      }
+
+      /* INPUTS */
+      input,
+      select {
+        width: 100%;
+        padding: 12px;
+        margin-top: 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      /* ROW (AGE + GENDER) */
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row input,
+      .row select {
+        width: 100%;
+      }
+
+      /* BUTTON */
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        background: #1e5799;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #163f73;
+      }
+
+      /* LINKS */
+      .login-link {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .login-link a {
+        color: #1e5799;
+        text-decoration: none;
+      }
+
+      /* CHECKBOX */
+      .terms {
+        margin-top: 10px;
+        font-size: 12px;
+      }
+
+      .footer {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 12px;
+        color: gray;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- LEFT IMAGE -->
+      <div class="left">
+        <img
+          src="https://i.pinimg.com/originals/e0/47/84/e04784fa62bc6c7b80d44a708cb7d43a.jpg"
+          alt="Doctor"
+        />
+      </div>
+
+      <!-- RIGHT FORM -->
+      <div class="right">
+        <h2>Create an Account</h2>
+        <p>
+          Sign up for a new account to start using the Smart Health Assessment
+          System
+        </p>
+
+        <form action="/signup" method="post">
+          <input type="text" name="name" placeholder="Full Name" required />
+
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+          />
+
+          <div class="row">
+            <input type="number" name="age" placeholder="Age" required />
+
+            <select name="gender" required>
+              <option value="">Select Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+          />
+
+          <button type="submit">Sign Up</button>
+        </form>
+
+        <div class="login-link">
+          Already have an account? <a href="/login">Login</a>
+        </div>
+
+        <!-- <div class="terms">
+          <input type="checkbox" required /> I agree to the Terms of Service and
+          Privacy Policy
+        </div> -->
+
+        <div class="footer">© 2026 Smart Health Assessment System</div>
+      </div>
+    </div>
+  </body>
+</html>

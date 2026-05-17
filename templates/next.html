@@ -1,0 +1,162 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prediction Result</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: #f4f7fb;
+      }
+
+      /* LAYOUT */
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        background: linear-gradient(to bottom, #007bff, #0056b3);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* CARD */
+      .card {
+        background: white;
+        width: 500px;
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        padding: 25px;
+        text-align: center;
+      }
+
+      .card h2 {
+        margin-bottom: 10px;
+      }
+
+      /* IMAGE */
+      .image-box img {
+        width: 100%;
+        border-radius: 10px;
+        margin: 15px 0;
+      }
+
+      /* RESULT */
+      .result {
+        font-size: 22px;
+        font-weight: 600;
+        color: #007bff;
+        margin-top: 10px;
+      }
+
+      /* BUTTON */
+      .btn {
+        display: inline-block;
+        margin-top: 15px;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: none;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        background: #0056b3;
+      }
+
+      /* MOBILE */
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <h3>🧴 Skin Disease AI</h3>
+
+        <a href="/home"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="/history"><i class="fas fa-upload"></i> History</a>
+        <a href="/ask"><i class="fas fa-comments"></i> AI Chat</a>
+        <a href="/upload"><i class="fas fa-upload"></i> Upload</a>
+        <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+        <a href="/contact"><i class="fas fa-phone"></i> Contact</a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="main">
+        <div class="card">
+          <h2>Prediction Result</h2>
+
+          <div class="image-box">
+            <img src="/static/uploads/{{ image }}" alt="Uploaded Image" />
+          </div>
+
+          <div class="result">{{ label }}</div>
+
+          <form action="/new" method="POST">
+            <input type="hidden" name="label" value="{{ label }}" />
+            <button type="submit" class="btn">Get Detailed Explanation</button>
+          </form>
+
+          <a href="/upload" class="btn">Try Another</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

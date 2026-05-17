@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ✅ FONT AWESOME -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+      }
+
+      .container {
+        display: flex;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        height: 100vh;
+        background: linear-gradient(to bottom, #1e5799, #207cca);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      /* HEADER */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .search {
+        width: 300px;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      /* HERO */
+      .hero {
+        background: #eaf2fb;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .hero img {
+        width: 200px;
+      }
+
+      /* BUTTON */
+      .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        background: #1e5799;
+        color: white;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+
+      .btn i {
+        margin-right: 5px;
+      }
+
+      /* CARDS */
+      .cards {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .card {
+        flex: 1;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .card i {
+        font-size: 30px;
+        margin-bottom: 10px;
+        color: #1e5799;
+      }
+
+      /* SECTION */
+      .section {
+        margin-top: 20px;
+        display: flex;
+        gap: 20px;
+      }
+
+      .box {
+        flex: 1;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: gray;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <h3>👋 Welcome, {{ user.name }}</h3>
+
+        <a href="/home"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="/history"><i class="fas fa-upload"></i> History</a>
+        <a href="/ask"><i class="fas fa-comments"></i> AI Chat</a>
+        <a href="/upload"><i class="fas fa-upload"></i> Upload</a>
+        <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+        <a href="/contact"><i class="fas fa-phone"></i> Contact</a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+
+      <!-- MAIN -->
+
+<div class="main">
+
+  <!-- HERO -->
+
+  <div class="hero">
+    <div>
+      <h3>
+        <i class="fas fa-hand-holding-heart"></i> Welcome to Smart Health
+      </h3>
+      <p>Hello, {{ user.name }}! How can we assist you today?</p>
+
+
+  <button class="btn" onclick="location.href='{{ url_for('upload') }}'">
+    <i class="fas fa-stethoscope"></i> Start Symptom Check
+  </button>
+
+  <button class="btn" style="background:#6c757d"
+    onclick="location.href='{{ url_for('history') }}'">
+    <i class="fas fa-file-medical"></i> View Reports
+  </button>
+</div>
+
+<img src="https://i.pinimg.com/originals/e0/47/84/e04784fa62bc6c7b80d44a708cb7d43a.jpg" />
+
+
+  </div>
+
+  <!-- CARDS -->
+
+  <div class="cards">
+
+
+<div class="card">
+  <i class="fas fa-stethoscope"></i>
+  <h4>Symptom Checker</h4>
+  <p>Check your symptoms</p>
+  <button class="btn"
+    onclick="location.href='{{ url_for('upload') }}'">
+    <i class="fas fa-play"></i> Start
+  </button>
+</div>
+
+<div class="card">
+  <i class="fas fa-file-medical"></i>
+  <h4>Health Reports</h4>
+  <p>View your reports</p>
+  <button class="btn"
+    onclick="location.href='{{ url_for('history') }}'">
+    <i class="fas fa-eye"></i> View
+  </button>
+</div>
+
+<div class="card">
+  <i class="fas fa-book-medical"></i>
+  <h4>Medical Knowledge</h4>
+  <p>Explore articles</p>
+  <button class="btn"
+    onclick="location.href='{{ url_for('ask') }}'">
+    <i class="fas fa-book"></i> Learn
+  </button>
+</div>
+
+<div class="card">
+  <i class="fas fa-info-circle"></i>
+  <h4>About System</h4>
+  <p>Know how it works</p>
+  <button class="btn"
+    onclick="location.href='{{ url_for('about') }}'">
+    <i class="fas fa-arrow-right"></i> Learn
+  </button>
+</div>
+
+
+  </div>
+
+  <!-- LOWER SECTION -->
+
+  <div class="section">
+
+
+<div class="box">
+  <h4><i class="fas fa-clock"></i> Recent Assessments</h4>
+
+  <p onclick="location.href='{{ url_for('history') }}'" style="cursor:pointer;">
+    ❤️ Hypertension - Apr 23
+  </p>
+
+  <p onclick="location.href='{{ url_for('history') }}'" style="cursor:pointer;">
+    ❤️ Migraine - Apr 18
+  </p>
+
+  <p onclick="location.href='{{ url_for('history') }}'" style="cursor:pointer;">
+    👍 Flu Symptoms - Apr 10
+  </p>
+</div>
+
+<div class="box">
+  <h4><i class="fas fa-lightbulb"></i> Health Tips</h4>
+
+  <p onclick="location.href='{{ url_for('about') }}'" style="cursor:pointer;">
+    Managing Stress for Better Health
+  </p>
+
+  <p onclick="location.href='{{ url_for('about') }}'" style="cursor:pointer;">
+    Early Signs of Diabetes
+  </p>
+</div>
+
+
+  </div>
+
+  <div class="footer">© 2026 Smart Health Assessment System</div>
+
+</div>
+
+  </body>
+</html>

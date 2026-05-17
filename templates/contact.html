@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Contact</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial;
+        background: #f4f7fb;
+      }
+
+      .container {
+        display: flex;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        height: 100vh;
+        background: linear-gradient(to bottom, #1e5799, #207cca);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar a {
+        display: flex;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      /* HEADER */
+      .header {
+        margin-bottom: 20px;
+      }
+
+      /* TOP SECTION */
+      .contact-top {
+        display: flex;
+        gap: 20px;
+      }
+
+      /* FORM */
+      .form-box {
+        flex: 1;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+      }
+
+      .form-box input,
+      .form-box textarea {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      .form-box button {
+        margin-top: 15px;
+        padding: 12px;
+        width: 100%;
+        background: #1e5799;
+        color: white;
+        border: none;
+        border-radius: 6px;
+      }
+
+      /* INFO */
+      .info-box {
+        flex: 1;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+      }
+
+      .info-box p {
+        margin: 10px 0;
+      }
+
+      /* IMAGE */
+      .image-box img {
+        width: 100%;
+        border-radius: 10px;
+      }
+
+      /* TEAM */
+      .team {
+        margin-top: 30px;
+      }
+
+      .team-cards {
+        display: flex;
+        gap: 15px;
+      }
+
+      .team-card {
+        flex: 1;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .team-card img {
+        width: 70px;
+        border-radius: 50%;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      {%include "nav.html"%}
+
+      <!-- MAIN -->
+      <div class="main">
+        <div class="header">
+          <h2><i class="fas fa-envelope"></i> Contact Us</h2>
+          <p>Get in touch with our team for support or questions</p>
+        </div>
+
+        <!-- TOP -->
+        <div class="contact-top">
+          <!-- FORM -->
+          <div class="form-box">
+            <h3>Send us a Message</h3>
+
+            <form method="POST">
+              <input type="text" name="name" placeholder="Your Name" required />
+              <input
+                type="email"
+                name="email"
+                placeholder="Your Email"
+                required
+              />
+              <textarea name="message" placeholder="Your Message"></textarea>
+              <button>Send Message</button>
+            </form>
+          </div>
+
+          <!-- INFO -->
+          <div class="info-box">
+            <h3>Contact Info</h3>
+
+            <p><i class="fas fa-envelope"></i> smarthealth@example.com</p>
+            <p><i class="fab fa-linkedin"></i> linkedin.com/in/suba</p>
+            <p><i class="fab fa-github"></i> github.com/suba</p>
+            <p>
+              <i class="fas fa-map-marker-alt"></i> Pondicherry Engineering
+              College, Puducherry
+            </p>
+
+            <div class="image-box">
+              <img
+                src="https://i.pinimg.com/originals/e0/47/84/e04784fa62bc6c7b80d44a708cb7d43a.jpg"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- TEAM -->
+        <div class="team">
+          <h3><i class="fas fa-users"></i> Meet Our Team</h3>
+
+          <div class="team-cards">
+            <div class="team-card">
+              <img src="https://randomuser.me/api/portraits/women/1.jpg" />
+              <h4>S Subalakshmi</h4>
+              <p>AI Developer</p>
+            </div>
+
+            <div class="team-card">
+              <img src="https://randomuser.me/api/portraits/women/2.jpg" />
+              <h4>Sharmila</h4>
+              <p>Frontend</p>
+            </div>
+
+            <div class="team-card">
+              <img src="https://randomuser.me/api/portraits/women/3.jpg" />
+              <h4>Anitha</h4>
+              <p>Backend</p>
+            </div>
+
+            <div class="team-card">
+              <img src="https://randomuser.me/api/portraits/men/4.jpg" />
+              <h4>Dr Vijay</h4>
+              <p>Guide</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">© 2026 Smart Health Assessment System</div>
+      </div>
+    </div>
+  </body>
+</html>

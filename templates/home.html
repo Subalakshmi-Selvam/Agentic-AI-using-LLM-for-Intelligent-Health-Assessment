@@ -1,0 +1,164 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Upload Image</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Poppins", sans-serif;
+        background: #f4f6f9;
+      }
+
+      /* LAYOUT */
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        background: linear-gradient(to bottom, #007bff, #0056b3);
+        color: white;
+        padding: 20px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 30px;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* CARD */
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        text-align: center;
+      }
+
+      .card h2 {
+        margin-bottom: 10px;
+      }
+
+      .card p {
+        color: gray;
+        font-size: 14px;
+      }
+
+      /* INPUT */
+      input[type="file"] {
+        width: 100%;
+        margin: 15px 0;
+      }
+
+      /* BUTTON */
+      button {
+        width: 100%;
+        padding: 12px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 15px;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      /* IMAGE PREVIEW */
+      img {
+        width: 100%;
+        margin-top: 15px;
+        display: none;
+        border-radius: 8px;
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- SIDEBAR -->
+      {%include "nav.html"%}
+
+      <!-- MAIN CONTENT -->
+      <div class="main">
+        <div class="card">
+          <h2>Upload Skin Image</h2>
+          <p>Select an image for prediction</p>
+
+          <form method="POST" action="/store" enctype="multipart/form-data">
+            <input
+              type="file"
+              name="file"
+              id="fileInput"
+              accept="image/*"
+              required
+            />
+
+            <img id="preview" />
+
+            <button type="submit">Analyze</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("fileInput").onchange = function (event) {
+        const preview = document.getElementById("preview");
+        preview.src = URL.createObjectURL(event.target.files[0]);
+        preview.style.display = "block";
+      };
+    </script>
+  </body>
+</html>
