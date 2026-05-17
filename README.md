@@ -138,6 +138,9 @@ Genetic Algorithm
 Deep Neural Network (DNN)
 Achieved Accuracy:
 ✅ 96.65% Accuracy
+# 🚀 Project Preview
+
+![Home Page](screenshots/home-page.jpeg)
 ![About Page](127.0.0.1_5000_about.png)
 ![Home Page](127.0.0.1_5000_home.png)
 
