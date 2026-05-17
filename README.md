@@ -139,6 +139,7 @@ Deep Neural Network (DNN)
 Achieved Accuracy:
 ✅ 96.65% Accuracy
 ![About Page](127.0.0.1_5000_about.png)
+![Home Page](127.0.0.1_5000_home.png)
 
 This improves disease prediction performance compared to traditional CNN-SVM-based systems.
 
