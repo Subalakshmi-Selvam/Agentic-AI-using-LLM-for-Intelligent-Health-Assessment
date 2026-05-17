@@ -144,6 +144,7 @@ Achieved Accuracy:
 ![About Page](127.0.0.1_5000_about.png)
 ![Home Page](127.0.0.1_5000_home.png)
 ![workflow](workflow.png)
+![Report](127.0.0.1_5000_new.png)
 
 
 This improves disease prediction performance compared to traditional CNN-SVM-based systems.
