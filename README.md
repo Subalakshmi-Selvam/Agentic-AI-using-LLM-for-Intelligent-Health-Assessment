@@ -43,6 +43,7 @@ Genetic Algorithm	Feature Optimization
 DNN	Disease Classification
 HTML, CSS, JavaScript	Frontend Development
 Git & GitHub	Version Control
+
 🚀 Key Features
 
 ✅ Intelligent healthcare question answering
@@ -137,6 +138,7 @@ Genetic Algorithm
 Deep Neural Network (DNN)
 Achieved Accuracy:
 ✅ 96.65% Accuracy
+![About Page](127.0.0.1_5000_about.png)
 
 This improves disease prediction performance compared to traditional CNN-SVM-based systems.
 
