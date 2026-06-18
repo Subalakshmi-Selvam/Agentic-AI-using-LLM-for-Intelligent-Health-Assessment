@@ -138,14 +138,12 @@ _skin_lock = threading.Lock()
 
 def _get_skin_model():
     global _skin_model
-    with _skin_lock:
-        if _skin_model is None:
-            if os.path.exists('skin_disease_model.h5'):
-                # Import TF only when actually needed
-                from tensorflow.keras.models import load_model as _load
-                _skin_model = _load('skin_disease_model.h5')
-            else:
-                print("WARNING: skin_disease_model.h5 not found.")
+    if _skin_model is None:
+        import tf_keras  # legacy Keras 2 loader
+        if os.path.exists('skin_disease_model.h5'):
+            _skin_model = tf_keras.models.load_model('skin_disease_model.h5')
+        else:
+            print("WARNING: skin_disease_model.h5 not found.")
     return _skin_model
 
 
