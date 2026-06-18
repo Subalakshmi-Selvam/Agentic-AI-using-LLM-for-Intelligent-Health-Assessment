@@ -25,3 +25,5 @@ sentence-transformers==3.0.1
 # PDF & reporting
 pypdf==4.2.0
 reportlab==4.2.0
+matplotlib==3.8.4
+Pillow==10.3.0
