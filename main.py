@@ -31,7 +31,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 import google.generativeai as genai
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 # ─────────────────────────────────────────
 # CONFIG
@@ -138,12 +137,14 @@ _skin_lock = threading.Lock()
 
 def _get_skin_model():
     global _skin_model
-    if _skin_model is None:
-        import tf_keras  # legacy Keras 2 loader
-        if os.path.exists('skin_disease_model.h5'):
-            _skin_model = tf_keras.models.load_model('skin_disease_model.h5')
-        else:
-            print("WARNING: skin_disease_model.h5 not found.")
+    with _skin_lock:
+        if _skin_model is None:
+            if os.path.exists('skin_disease_model.h5'):
+                # tf_keras loads legacy Keras 2 .h5 models (avoids layer name slash error)
+                import tf_keras
+                _skin_model = tf_keras.models.load_model('skin_disease_model.h5')
+            else:
+                print("WARNING: skin_disease_model.h5 not found.")
     return _skin_model
 
 
@@ -204,7 +205,8 @@ def load_store_if_exists():
 
 
 def predict(image_path):
-    from tensorflow.keras.preprocessing import image as tf_image
+    import tf_keras
+    tf_image = tf_keras.preprocessing.image
     model1 = _get_skin_model()
     if model1 is None:
         return "Model not available"
