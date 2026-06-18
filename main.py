@@ -75,13 +75,25 @@ def _init_rag():
         if not os.path.exists("report.pdf"):
             print("WARNING: report.pdf not found – RAG features disabled.")
             return
+        import time
         print("Loading Cancer PDF …")
         loader = PyPDFLoader("report.pdf")
         documents = loader.load()
-        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
         docs = splitter.split_documents(documents)
+        print(f"Embedding {len(docs)} chunks in batches …")
         embeddings = get_embeddings()
-        vectorstore = FAISS.from_documents(docs, embeddings)
+        # Embed in small batches to avoid Google API 504 timeout
+        BATCH = 20
+        vectorstore = None
+        for i in range(0, len(docs), BATCH):
+            batch = docs[i:i + BATCH]
+            if vectorstore is None:
+                vectorstore = FAISS.from_documents(batch, embeddings)
+            else:
+                vectorstore.add_documents(batch)
+            print(f"  embedded {min(i + BATCH, len(docs))}/{len(docs)}")
+            time.sleep(1)
         _rag_retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
         _rag_llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
