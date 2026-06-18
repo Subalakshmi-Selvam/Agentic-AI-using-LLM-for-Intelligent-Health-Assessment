@@ -6,6 +6,7 @@ import random
 import sqlite3
 import urllib.request
 from datetime import datetime
+import threading
 
 import numpy as np
 import matplotlib
@@ -244,6 +245,17 @@ def init_db():
     conn.close()
 
 init_db()
+
+
+
+def _preload_rag():
+    """Load RAG in background so it's ready before first request."""
+    try:
+        _init_rag()
+    except Exception as e:
+        print("RAG preload failed:", e)
+
+threading.Thread(target=_preload_rag, daemon=True).start()
 
 
 # ─────────────────────────────────────────────────────────────────────
