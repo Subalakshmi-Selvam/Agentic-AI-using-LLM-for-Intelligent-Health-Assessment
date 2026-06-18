@@ -31,6 +31,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 import google.generativeai as genai
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 # ─────────────────────────────────────────
 # CONFIG
