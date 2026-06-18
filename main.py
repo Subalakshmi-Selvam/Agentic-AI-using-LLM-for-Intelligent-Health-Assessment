@@ -4,14 +4,11 @@ import re
 import uuid
 import random
 import sqlite3
-import urllib.request
-from datetime import datetime
 import threading
+from datetime import datetime
 
+import gc
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')  # headless backend for servers
-import matplotlib.pyplot as plt
 
 from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, jsonify, send_file)
@@ -20,9 +17,8 @@ from werkzeug.utils import secure_filename
 # LangChain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 
 # ReportLab
@@ -43,7 +39,7 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 genai.configure(api_key=GOOGLE_API_KEY)
 
 app = Flask(__name__)
-app.secret_key = "secret key"
+app.secret_key = os.environ.get("SECRET_KEY", "secret key")
 
 UPLOAD_FOLDER = 'static/uploads/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -55,42 +51,44 @@ os.makedirs(INDEX_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ─────────────────────────────────────────
-# LAZY RAG GLOBALS  (loaded on first use)
+# LAZY RAG GLOBALS
 # ─────────────────────────────────────────
 _rag_retriever = None
 _rag_llm = None
 _rag_prompt = None
+_rag_lock = threading.Lock()
 
-def _init_rag():
-    """Load the cancer PDF and set up the RAG chain.
-    Called lazily on the first request that needs it."""
-    global _rag_retriever, _rag_llm, _rag_prompt
 
-    if _rag_retriever is not None:
-        return  # already initialised
-
-    if not os.path.exists("report.pdf"):
-        print("WARNING: report.pdf not found – RAG features disabled.")
-        return
-
-    print("Loading Cancer PDF …")
-    loader = PyPDFLoader("report.pdf")
-    documents = loader.load()
-
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    docs = splitter.split_documents(documents)
-
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vectorstore = FAISS.from_documents(docs, embeddings)
-    _rag_retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
-
-    _rag_llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0,
+def get_embeddings():
+    """Google embeddings — no PyTorch, no sentence-transformers, ~0 extra RAM."""
+    return GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
         google_api_key=GOOGLE_API_KEY
     )
 
-    _rag_prompt = ChatPromptTemplate.from_template("""
+
+def _init_rag():
+    global _rag_retriever, _rag_llm, _rag_prompt
+    with _rag_lock:
+        if _rag_retriever is not None:
+            return
+        if not os.path.exists("report.pdf"):
+            print("WARNING: report.pdf not found – RAG features disabled.")
+            return
+        print("Loading Cancer PDF …")
+        loader = PyPDFLoader("report.pdf")
+        documents = loader.load()
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        docs = splitter.split_documents(documents)
+        embeddings = get_embeddings()
+        vectorstore = FAISS.from_documents(docs, embeddings)
+        _rag_retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+        _rag_llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash",
+            temperature=0,
+            google_api_key=GOOGLE_API_KEY
+        )
+        _rag_prompt = ChatPromptTemplate.from_template("""
 You are an expert oncology medical AI.
 
 STRICT RULES:
@@ -105,34 +103,41 @@ Question:
 {question}
 
 Provide structured output:
-
 1. Explanation:
 2. Symptoms:
 3. Risk Factors:
 4. Prevention:
 5. Additional Notes:
 """)
-    print("RAG ready.")
+        print("RAG ready.")
+        gc.collect()  # free memory used during PDF loading
 
+
+# Preload RAG in background so first request is fast
+threading.Thread(target=_init_rag, daemon=True).start()
 
 # ─────────────────────────────────────────
-# LAZY SKIN MODEL GLOBAL
+# LAZY SKIN MODEL
 # ─────────────────────────────────────────
 _skin_model = None
+_skin_lock = threading.Lock()
+
 
 def _get_skin_model():
     global _skin_model
-    if _skin_model is None:
-        from tensorflow.keras.models import load_model as _load
-        if os.path.exists('skin_disease_model.h5'):
-            _skin_model = _load('skin_disease_model.h5')
-        else:
-            print("WARNING: skin_disease_model.h5 not found.")
+    with _skin_lock:
+        if _skin_model is None:
+            if os.path.exists('skin_disease_model.h5'):
+                # Import TF only when actually needed
+                from tensorflow.keras.models import load_model as _load
+                _skin_model = _load('skin_disease_model.h5')
+            else:
+                print("WARNING: skin_disease_model.h5 not found.")
     return _skin_model
 
 
 # ─────────────────────────────────────────
-# FAISS CHAT STORE (PDF-upload chat feature)
+# PDF-UPLOAD CHAT STORE
 # ─────────────────────────────────────────
 vectorstore1 = None
 
@@ -142,13 +147,6 @@ vectorstore1 = None
 # ─────────────────────────────────────────
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"}
-    )
 
 
 def create_pdf_from_text(text, output_path):
@@ -165,7 +163,7 @@ def create_pdf_from_text(text, output_path):
 
 
 def extract_text_from_image(image_path):
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     uploaded_file = genai.upload_file(image_path)
     response = model.generate_content([
         "Extract all text from this image accurately.",
@@ -205,473 +203,26 @@ def predict(image_path):
     img_array = (img_array - np.mean(img_array)) / np.std(img_array)
     predictions = model1.predict(img_array)
     predicted_class = np.argmax(predictions, axis=1)
+    del img_array, predictions  # free memory immediately
+    gc.collect()
     label_map = {
-        0: 'actinic keratosis',
-        1: 'basal cell carcinoma',
-        2: 'dermatofibroma',
-        3: 'melanoma',
-        4: 'nevus',
-        5: 'pigmented benign keratosis',
-        6: 'seborrheic keratosis',
-        7: 'squamous cell carcinoma',
-        8: 'vascular lesion'
+        0: 'actinic keratosis', 1: 'basal cell carcinoma',
+        2: 'dermatofibroma', 3: 'melanoma', 4: 'nevus',
+        5: 'pigmented benign keratosis', 6: 'seborrheic keratosis',
+        7: 'squamous cell carcinoma', 8: 'vascular lesion'
     }
-    predicted_label = label_map[predicted_class[0]]
-    print(f"Predicted Class: {predicted_label}")
-    return predicted_label
-
-
-# ─────────────────────────────────────────
-# INIT DB
-# ─────────────────────────────────────────
-def init_db():
-    conn = sqlite3.connect("signup.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT, email TEXT UNIQUE,
-            age TEXT, gender TEXT, password TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            userid INTEGER, filename TEXT, label TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
-
-
-
-def _preload_rag():
-    """Load RAG in background so it's ready before first request."""
-    try:
-        _init_rag()
-    except Exception as e:
-        print("RAG preload failed:", e)
-
-threading.Thread(target=_preload_rag, daemon=True).start()
-
-
-# ─────────────────────────────────────────────────────────────────────
-# ROUTES
-# ─────────────────────────────────────────────────────────────────────
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route('/logon')
-def logon():
-    return render_template('signup.html')
-
-
-@app.route('/login')
-def login():
-    return render_template('signin.html')
-
-
-@app.route("/signup", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        age = request.form["age"]
-        gender = request.form["gender"]
-        password = request.form["password"]
-        try:
-            conn = sqlite3.connect("signup.db")
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO users (name, email, age, gender, password) VALUES (?, ?, ?, ?, ?)",
-                (name, email, age, gender, password)
-            )
-            conn.commit()
-            conn.close()
-            flash("Registration Successful! Please login.", "success")
-            return redirect(url_for("login"))
-        except Exception:
-            flash("Email already exists!", "danger")
-    return redirect("/login")
-
-
-@app.route("/signin", methods=["GET", "POST"])
-def signin():
-    if request.method == "POST":
-        username = request.form.get("user")
-        password = request.form.get("password")
-
-        if username == "admin" and password == "admin":
-            session["admin"] = True
-            return redirect(url_for("admin_dashboard"))
-
-        con = sqlite3.connect("signup.db")
-        cur = con.cursor()
-        cur.execute(
-            "SELECT id, name, password FROM users WHERE email=? AND password=?",
-            (username, password)
-        )
-        data = cur.fetchone()
-        con.close()
-
-        if data:
-            session["id"] = data[0]
-            session["user"] = data[1]
-            return redirect(url_for("home"))
-        else:
-            flash("Invalid username or password")
-            return render_template("signin.html")
-
-    return render_template("signin.html")
-
-
-@app.route('/home')
-def home():
-    return render_template('dashboard.html', user=session["user"])
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html", user=session["user"])
-
-
-@app.route("/contact", methods=["GET", "POST"])
-def contact():
-    if request.method == "POST":
-        name = request.form.get("name")
-        email = request.form.get("email")
-        message = request.form.get("message")
-        print(name, email, message)
-        return "Message Sent Successfully ✅"
-    return render_template("contact.html", user=session["user"])
-
-
-@app.route("/upload")
-def upload():
-    return render_template("home.html", user=session["user"])
-
-
-@app.route("/chatbot")
-def chatbot():
-    return render_template("chatbot.html", user=session["user"])
-
-
-@app.route("/chatupload")
-def chatupload():
-    return render_template("aichat.html", user=session["user"])
-
-
-# ─────────────────────────────────────────
-# SKIN PREDICTION
-# ─────────────────────────────────────────
-@app.route('/store', methods=['POST'])
-def upload_image():
-    if "id" not in session:
-        flash("Please login first")
-        return redirect(url_for("login"))
-
-    if 'file' not in request.files:
-        flash('No file uploaded')
-        return redirect(url_for("home"))
-
-    file = request.files['file']
-
-    if file.filename == '':
-        flash('No selected file')
-        return redirect(url_for("home"))
-
-    if not allowed_file(file.filename):
-        flash('Invalid file type')
-        return redirect(url_for("home"))
-
-    filename = str(uuid.uuid4()) + "_" + secure_filename(file.filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
-
-    label = predict(file_path)
-
-    try:
-        conn = sqlite3.connect("signup.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO predictions (userid, filename, label) VALUES (?, ?, ?)",
-            (session["id"], filename, label)
-        )
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("DB Error:", e)
-        flash("Error saving prediction")
-
-    return render_template("next.html", label=label, image=filename)
-
-
-@app.route('/history')
-def history():
-    conn = sqlite3.connect("signup.db")
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM predictions WHERE userid=? ORDER BY id DESC",
-        (session["id"],)
-    )
-    data = cursor.fetchall()
-    conn.close()
-    return render_template("history.html", data=data, user=session["user"])
-
-
-# ─────────────────────────────────────────
-# RAG – skin disease info page
-# ─────────────────────────────────────────
-@app.route("/new", methods=["POST"])
-def new():
-    _init_rag()
-    try:
-        label = request.form.get("label")
-        query = f"{label} explanation symptoms risk prevention"
-
-        if _rag_retriever is None:
-            return render_template("new.html", answer="RAG not available (report.pdf missing)", label=label)
-
-        retrieved_docs = _rag_retriever.invoke(query)
-        context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-        final_prompt = _rag_prompt.format(context=context, question=query)
-        response = _rag_llm.invoke(final_prompt)
-        answer = response.content
-        return render_template("new.html", answer=answer, label=label)
-    except Exception as e:
-        print("Error:", e)
-        flash("Prediction failed")
-        return redirect(url_for("home"))
-
-
-# ─────────────────────────────────────────
-# RAG – chatbot ask
-# ─────────────────────────────────────────
-@app.route("/ask", methods=["POST", "GET"])
-def ask():
-    _init_rag()
-    if request.method == "POST":
-        data = request.get_json()
-        user_query = data.get("message")
-        try:
-            if _rag_retriever is None:
-                return {"reply": "RAG not available (report.pdf missing)"}
-
-            retrieved_docs = _rag_retriever.invoke(user_query)
-            context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-            final_prompt = _rag_prompt.format(context=context, question=user_query)
-            response = _rag_llm.invoke(final_prompt)
-            answer = response.content
-            return {"reply": answer}
-        except Exception as e:
-            print(e)
-            return {"reply": "Error processing request"}
-    return render_template("chatbot.html", user=session["user"])
-
-
-# ─────────────────────────────────────────
-# PDF upload chat
-# ─────────────────────────────────────────
-@app.route("/upload-pdf", methods=["POST"])
-def upload_pdf():
-    global vectorstore1
-
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    files = request.files.getlist("file")
-    all_docs = []
-
-    for f in files:
-        if f.filename == "":
-            continue
-        filename = secure_filename(f.filename)
-        path = os.path.join(UPLOAD_FOLDER, filename)
-        f.save(path)
-        ext = filename.split(".")[-1].lower()
-
-        if ext == "pdf":
-            loader = PyPDFLoader(path)
-            documents = loader.load()
-            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-            docs = splitter.split_documents(documents)
-            all_docs.extend(docs)
-
-        elif ext in ["png", "jpg", "jpeg"]:
-            extracted_text = extract_text_from_image(path)
-            pdf_filename = filename.rsplit(".", 1)[0] + ".pdf"
-            pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
-            create_pdf_from_text(extracted_text, pdf_path)
-            loader = PyPDFLoader(pdf_path)
-            documents = loader.load()
-            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-            docs = splitter.split_documents(documents)
-            all_docs.extend(docs)
-
-    if not all_docs:
-        return jsonify({"error": "No valid document content"}), 400
-
-    vectorstore1 = load_or_create_store(all_docs)
-    return jsonify({"message": "Files uploaded & indexed successfully"})
-
-
-@app.route("/chat", methods=["POST"])
-def chat():
-    global vectorstore1
-
-    if vectorstore1 is None:
-        vectorstore1 = load_store_if_exists()
-
-    if vectorstore1 is None:
-        return jsonify({"error": "Upload PDF first"}), 400
-
-    data = request.get_json(force=True)
-    user_query = (data.get("question") or "").strip()
-
-    if not user_query:
-        return jsonify({"error": "Empty question"}), 400
-
-    retriever = vectorstore1.as_retriever(search_kwargs={"k": 4})
-    retrieved_docs = retriever.invoke(user_query)
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0,
-        google_api_key=GOOGLE_API_KEY
-    )
-
-    prompt = ChatPromptTemplate.from_template("""
-You are an intelligent document assistant.
-
-STRICT RULES:
-- Answer ONLY using the provided context.
-- If not found → "Information not available in the document."
-- Do NOT hallucinate.
-
-Context:
-{context}
-
-Question:
-{question}
-
-Give:
-1. Summary
-2. Key Points
-3. Explanation
-4. Additional Notes
-""")
-
-    final_prompt = prompt.format(context=context, question=user_query)
-    response = llm.invoke(final_prompt)
-    answer = response.content
-    return jsonify({"reply": answer})
-
-
-# ─────────────────────────────────────────
-# DOWNLOAD REPORT (user)
-# ─────────────────────────────────────────
-@app.route("/download_report", methods=["POST"])
-def download_report():
-    _init_rag()
-
-    if "id" not in session:
-        flash("Login required")
-        return redirect(url_for("login"))
-
-    label = request.form.get("label")
-    filename = request.form.get("image")
-
-    if _rag_retriever is None:
-        flash("RAG not available")
-        return redirect(url_for("home"))
-
-    query = f"{label} explanation symptoms risk prevention"
-    retrieved_docs = _rag_retriever.invoke(query)
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-    final_prompt = _rag_prompt.format(context=context, question=query)
-    response = _rag_llm.invoke(final_prompt)
-    answer = response.content
-
-    conn = sqlite3.connect("signup.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, age, gender, email FROM users WHERE id=?", (session["id"],))
-    user = cursor.fetchone()
-    conn.close()
-
-    name, age, gender, email = user if user else ("Unknown", "-", "-", "-")
-
-    buffer = _build_report_pdf(label, filename, answer, name, age, gender, email)
-    return send_file(buffer, as_attachment=True,
-                     download_name="AI_Skin_Report.pdf",
-                     mimetype="application/pdf")
-
-
-# ─────────────────────────────────────────
-# DOWNLOAD REPORT (admin)
-# ─────────────────────────────────────────
-@app.route("/download_report_admin", methods=["POST"])
-def download_report_admin():
-    _init_rag()
-
-    if "admin" not in session:
-        flash("Admin login required")
-        return redirect(url_for("login"))
-
-    userid = request.form.get("userid")
-    label = request.form.get("label")
-    filename = request.form.get("image")
-
-    if _rag_retriever is None:
-        flash("RAG not available")
-        return redirect(url_for("login"))
-
-    query = f"{label} explanation symptoms risk prevention"
-    retrieved_docs = _rag_retriever.invoke(query)
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-    final_prompt = _rag_prompt.format(context=context, question=query)
-    response = _rag_llm.invoke(final_prompt)
-    answer = response.content
-
-    conn = sqlite3.connect("signup.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, age, gender, email FROM users WHERE id=?", (userid,))
-    user = cursor.fetchone()
-    conn.close()
-
-    name, age, gender, email = user if user else ("Unknown", "-", "-", "-")
-
-    buffer = _build_report_pdf(label, filename, answer, name, age, gender, email)
-    return send_file(buffer, as_attachment=True,
-                     download_name=f"Report_User_{userid}.pdf",
-                     mimetype="application/pdf")
+    return label_map[predicted_class[0]]
 
 
 def _build_report_pdf(label, filename, answer, name, age, gender, email):
-    """Shared PDF builder for user and admin report routes."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer)
     styles = getSampleStyleSheet()
-
     title_style = ParagraphStyle(
         name="Title", fontSize=20, alignment=TA_CENTER,
-        textColor=colors.darkblue, spaceAfter=10
-    )
+        textColor=colors.darkblue, spaceAfter=10)
     section_style = ParagraphStyle(
-        name="Section", fontSize=13, textColor=colors.black, spaceAfter=6
-    )
+        name="Section", fontSize=13, textColor=colors.black, spaceAfter=6)
     normal = styles["Normal"]
     content = []
 
@@ -683,12 +234,10 @@ def _build_report_pdf(label, filename, answer, name, age, gender, email):
 
     report_id = "REP" + str(random.randint(1000, 9999))
     today = datetime.now().strftime("%d-%m-%Y")
-
     content.append(Paragraph("<b>Patient Information</b>", section_style))
     patient_table = Table([
-        ["Name:", name], ["Email:", email],
-        ["Age:", str(age)], ["Gender:", gender],
-        ["Report ID:", report_id], ["Date:", today]
+        ["Name:", name], ["Email:", email], ["Age:", str(age)],
+        ["Gender:", gender], ["Report ID:", report_id], ["Date:", today]
     ], colWidths=[120, 300])
     patient_table.setStyle(TableStyle([('BOTTOMPADDING', (0, 0), (-1, -1), 6)]))
     content.append(patient_table)
@@ -710,11 +259,9 @@ def _build_report_pdf(label, filename, answer, name, age, gender, email):
     content.append(Paragraph(f"Disease: {label}", normal))
     content.append(Spacer(1, 10))
 
-    for title, key in [("Explanation", "Explanation"), ("Symptoms", "Symptoms"),
-                        ("Risk Factors", "Risk Factors"), ("Prevention", "Prevention"),
-                        ("Additional Notes", "Additional Notes")]:
+    for title in ["Explanation", "Symptoms", "Risk Factors", "Prevention", "Additional Notes"]:
         content.append(Paragraph(f"<b>{title}</b>", section_style))
-        content.append(Paragraph(get_section(key), normal))
+        content.append(Paragraph(get_section(title), normal))
         content.append(Spacer(1, 10))
 
     doc.build(content)
@@ -723,8 +270,318 @@ def _build_report_pdf(label, filename, answer, name, age, gender, email):
 
 
 # ─────────────────────────────────────────
-# ADMIN
+# INIT DB
 # ─────────────────────────────────────────
+def init_db():
+    conn = sqlite3.connect("signup.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT, email TEXT UNIQUE,
+            age TEXT, gender TEXT, password TEXT)""")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userid INTEGER, filename TEXT, label TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    conn.commit()
+    conn.close()
+
+init_db()
+
+
+# ─────────────────────────────────────────
+# ROUTES
+# ─────────────────────────────────────────
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route('/logon')
+def logon():
+    return render_template('signup.html')
+
+@app.route('/login')
+def login():
+    return render_template('signin.html')
+
+@app.route("/signup", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        name = request.form["name"]
+        email = request.form["email"]
+        age = request.form["age"]
+        gender = request.form["gender"]
+        password = request.form["password"]
+        try:
+            conn = sqlite3.connect("signup.db")
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO users (name, email, age, gender, password) VALUES (?, ?, ?, ?, ?)",
+                (name, email, age, gender, password))
+            conn.commit()
+            conn.close()
+            flash("Registration Successful! Please login.", "success")
+            return redirect(url_for("login"))
+        except Exception:
+            flash("Email already exists!", "danger")
+    return redirect("/login")
+
+@app.route("/signin", methods=["GET", "POST"])
+def signin():
+    if request.method == "POST":
+        username = request.form.get("user")
+        password = request.form.get("password")
+        if username == "admin" and password == "admin":
+            session["admin"] = True
+            return redirect(url_for("admin_dashboard"))
+        con = sqlite3.connect("signup.db")
+        cur = con.cursor()
+        cur.execute(
+            "SELECT id, name, password FROM users WHERE email=? AND password=?",
+            (username, password))
+        data = cur.fetchone()
+        con.close()
+        if data:
+            session["id"] = data[0]
+            session["user"] = data[1]
+            return redirect(url_for("home"))
+        else:
+            flash("Invalid username or password")
+            return render_template("signin.html")
+    return render_template("signin.html")
+
+@app.route('/home')
+def home():
+    return render_template('dashboard.html', user=session["user"])
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+@app.route("/about")
+def about():
+    return render_template("about.html", user=session["user"])
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        print(request.form.get("name"), request.form.get("email"), request.form.get("message"))
+        return "Message Sent Successfully ✅"
+    return render_template("contact.html", user=session["user"])
+
+@app.route("/upload")
+def upload():
+    return render_template("home.html", user=session["user"])
+
+@app.route("/chatbot")
+def chatbot():
+    return render_template("chatbot.html", user=session["user"])
+
+@app.route("/chatupload")
+def chatupload():
+    return render_template("aichat.html", user=session["user"])
+
+
+# ── Skin prediction ──────────────────────
+@app.route('/store', methods=['POST'])
+def upload_image():
+    if "id" not in session:
+        flash("Please login first")
+        return redirect(url_for("login"))
+    if 'file' not in request.files:
+        flash('No file uploaded')
+        return redirect(url_for("home"))
+    file = request.files['file']
+    if file.filename == '' or not allowed_file(file.filename):
+        flash('Invalid file')
+        return redirect(url_for("home"))
+    filename = str(uuid.uuid4()) + "_" + secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    label = predict(file_path)
+    try:
+        conn = sqlite3.connect("signup.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO predictions (userid, filename, label) VALUES (?, ?, ?)",
+            (session["id"], filename, label))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("DB Error:", e)
+    return render_template("next.html", label=label, image=filename)
+
+@app.route('/history')
+def history():
+    conn = sqlite3.connect("signup.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM predictions WHERE userid=? ORDER BY id DESC", (session["id"],))
+    data = cursor.fetchall()
+    conn.close()
+    return render_template("history.html", data=data, user=session["user"])
+
+
+# ── RAG routes ───────────────────────────
+@app.route("/new", methods=["POST"])
+def new():
+    _init_rag()
+    label = request.form.get("label")
+    if _rag_retriever is None:
+        return render_template("new.html", answer="RAG not available (report.pdf missing)", label=label)
+    try:
+        query = f"{label} explanation symptoms risk prevention"
+        retrieved_docs = _rag_retriever.invoke(query)
+        context = "\n\n".join([d.page_content for d in retrieved_docs])
+        final_prompt = _rag_prompt.format(context=context, question=query)
+        response = _rag_llm.invoke(final_prompt)
+        return render_template("new.html", answer=response.content, label=label)
+    except Exception as e:
+        print("Error:", e)
+        flash("Prediction failed")
+        return redirect(url_for("home"))
+
+@app.route("/ask", methods=["POST", "GET"])
+def ask():
+    _init_rag()
+    if request.method == "POST":
+        data = request.get_json()
+        user_query = data.get("message")
+        if _rag_retriever is None:
+            return {"reply": "RAG not available (report.pdf missing)"}
+        try:
+            retrieved_docs = _rag_retriever.invoke(user_query)
+            context = "\n\n".join([d.page_content for d in retrieved_docs])
+            final_prompt = _rag_prompt.format(context=context, question=user_query)
+            response = _rag_llm.invoke(final_prompt)
+            return {"reply": response.content}
+        except Exception as e:
+            print(e)
+            return {"reply": "Error processing request"}
+    return render_template("chatbot.html", user=session["user"])
+
+
+# ── PDF-upload chat ──────────────────────
+@app.route("/upload-pdf", methods=["POST"])
+def upload_pdf():
+    global vectorstore1
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    files = request.files.getlist("file")
+    all_docs = []
+    for f in files:
+        if f.filename == "":
+            continue
+        filename = secure_filename(f.filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        f.save(path)
+        ext = filename.split(".")[-1].lower()
+        if ext == "pdf":
+            loader = PyPDFLoader(path)
+            documents = loader.load()
+        elif ext in ["png", "jpg", "jpeg"]:
+            extracted_text = extract_text_from_image(path)
+            pdf_path = os.path.join(UPLOAD_FOLDER, filename.rsplit(".", 1)[0] + ".pdf")
+            create_pdf_from_text(extracted_text, pdf_path)
+            loader = PyPDFLoader(pdf_path)
+            documents = loader.load()
+        else:
+            continue
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        all_docs.extend(splitter.split_documents(documents))
+    if not all_docs:
+        return jsonify({"error": "No valid document content"}), 400
+    vectorstore1 = load_or_create_store(all_docs)
+    return jsonify({"message": "Files uploaded & indexed successfully"})
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    global vectorstore1
+    if vectorstore1 is None:
+        vectorstore1 = load_store_if_exists()
+    if vectorstore1 is None:
+        return jsonify({"error": "Upload PDF first"}), 400
+    data = request.get_json(force=True)
+    user_query = (data.get("question") or "").strip()
+    if not user_query:
+        return jsonify({"error": "Empty question"}), 400
+    retriever = vectorstore1.as_retriever(search_kwargs={"k": 4})
+    retrieved_docs = retriever.invoke(user_query)
+    context = "\n\n".join([d.page_content for d in retrieved_docs])
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0,
+                                  google_api_key=GOOGLE_API_KEY)
+    prompt = ChatPromptTemplate.from_template("""
+You are an intelligent document assistant.
+Answer ONLY using the provided context. If not found say "Information not available."
+
+Context: {context}
+Question: {question}
+
+Give: 1. Summary 2. Key Points 3. Explanation 4. Additional Notes
+""")
+    response = llm.invoke(prompt.format(context=context, question=user_query))
+    return jsonify({"reply": response.content})
+
+
+# ── Report downloads ─────────────────────
+@app.route("/download_report", methods=["POST"])
+def download_report():
+    _init_rag()
+    if "id" not in session:
+        flash("Login required")
+        return redirect(url_for("login"))
+    if _rag_retriever is None:
+        flash("RAG not available")
+        return redirect(url_for("home"))
+    label = request.form.get("label")
+    filename = request.form.get("image")
+    query = f"{label} explanation symptoms risk prevention"
+    retrieved_docs = _rag_retriever.invoke(query)
+    context = "\n\n".join([d.page_content for d in retrieved_docs])
+    final_prompt = _rag_prompt.format(context=context, question=query)
+    answer = _rag_llm.invoke(final_prompt).content
+    conn = sqlite3.connect("signup.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, age, gender, email FROM users WHERE id=?", (session["id"],))
+    user = cursor.fetchone()
+    conn.close()
+    name, age, gender, email = user if user else ("Unknown", "-", "-", "-")
+    buffer = _build_report_pdf(label, filename, answer, name, age, gender, email)
+    return send_file(buffer, as_attachment=True,
+                     download_name="AI_Skin_Report.pdf", mimetype="application/pdf")
+
+@app.route("/download_report_admin", methods=["POST"])
+def download_report_admin():
+    _init_rag()
+    if "admin" not in session:
+        flash("Admin login required")
+        return redirect(url_for("login"))
+    if _rag_retriever is None:
+        flash("RAG not available")
+        return redirect(url_for("login"))
+    userid = request.form.get("userid")
+    label = request.form.get("label")
+    filename = request.form.get("image")
+    query = f"{label} explanation symptoms risk prevention"
+    retrieved_docs = _rag_retriever.invoke(query)
+    context = "\n\n".join([d.page_content for d in retrieved_docs])
+    final_prompt = _rag_prompt.format(context=context, question=query)
+    answer = _rag_llm.invoke(final_prompt).content
+    conn = sqlite3.connect("signup.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, age, gender, email FROM users WHERE id=?", (userid,))
+    user = cursor.fetchone()
+    conn.close()
+    name, age, gender, email = user if user else ("Unknown", "-", "-", "-")
+    buffer = _build_report_pdf(label, filename, answer, name, age, gender, email)
+    return send_file(buffer, as_attachment=True,
+                     download_name=f"Report_User_{userid}.pdf", mimetype="application/pdf")
+
+
+# ── Admin ────────────────────────────────
 @app.route("/admin")
 def admin_dashboard():
     if "admin" not in session:
@@ -737,9 +594,7 @@ def admin_dashboard():
     total_predictions = cursor.fetchone()[0]
     conn.close()
     return render_template("admin_dashboard.html",
-                            total_users=total_users,
-                            total_predictions=total_predictions)
-
+                            total_users=total_users, total_predictions=total_predictions)
 
 @app.route("/admin/users")
 def admin_users():
@@ -752,7 +607,6 @@ def admin_users():
     conn.close()
     return render_template("admin_users.html", users=users)
 
-
 @app.route("/admin/history")
 def admin_history():
     if "admin" not in session:
@@ -764,16 +618,12 @@ def admin_history():
                predictions.label, predictions.created_at, predictions.userid
         FROM predictions
         JOIN users ON predictions.userid = users.id
-        ORDER BY predictions.id DESC
-    """)
+        ORDER BY predictions.id DESC""")
     data = cursor.fetchall()
     conn.close()
     return render_template("admin_history.html", data=data)
 
 
-# ─────────────────────────────────────────
-# ENTRY POINT
-# ─────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
