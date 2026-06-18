@@ -1,14 +1,12 @@
 import os
 import io
+import threading
 import re
 import uuid
 import random
 import sqlite3
-import threading
 from datetime import datetime
 
-import gc
-import numpy as np
 
 from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, jsonify, send_file)
@@ -56,7 +54,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 _rag_retriever = None
 _rag_llm = None
 _rag_prompt = None
-_rag_lock = threading.Lock()
 
 
 def get_embeddings():
@@ -129,23 +126,7 @@ Provide structured output:
 threading.Thread(target=_init_rag, daemon=True).start()
 
 # ─────────────────────────────────────────
-# LAZY SKIN MODEL
-# ─────────────────────────────────────────
-_skin_model = None
-_skin_lock = threading.Lock()
-
-
-def _get_skin_model():
-    global _skin_model
-    with _skin_lock:
-        if _skin_model is None:
-            if os.path.exists('skin_disease_model.h5'):
-                # tf_keras loads legacy Keras 2 .h5 models (avoids layer name slash error)
-                import tf_keras
-                _skin_model = tf_keras.models.load_model('skin_disease_model.h5')
-            else:
-                print("WARNING: skin_disease_model.h5 not found.")
-    return _skin_model
+# SKIN PREDICTION — uses Gemini Vision API (no TensorFlow, zero local RAM)
 
 
 # ─────────────────────────────────────────
@@ -205,26 +186,27 @@ def load_store_if_exists():
 
 
 def predict(image_path):
-    import tf_keras
-    tf_image = tf_keras.preprocessing.image
-    model1 = _get_skin_model()
-    if model1 is None:
-        return "Model not available"
-    img = tf_image.load_img(image_path, target_size=(75, 100))
-    img_array = tf_image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = (img_array - np.mean(img_array)) / np.std(img_array)
-    predictions = model1.predict(img_array)
-    predicted_class = np.argmax(predictions, axis=1)
-    del img_array, predictions  # free memory immediately
-    gc.collect()
-    label_map = {
-        0: 'actinic keratosis', 1: 'basal cell carcinoma',
-        2: 'dermatofibroma', 3: 'melanoma', 4: 'nevus',
-        5: 'pigmented benign keratosis', 6: 'seborrheic keratosis',
-        7: 'squamous cell carcinoma', 8: 'vascular lesion'
-    }
-    return label_map[predicted_class[0]]
+    """Classify skin disease using Gemini Vision — no TensorFlow needed."""
+    classes = [
+        'actinic keratosis', 'basal cell carcinoma', 'dermatofibroma',
+        'melanoma', 'nevus', 'pigmented benign keratosis',
+        'seborrheic keratosis', 'squamous cell carcinoma', 'vascular lesion'
+    ]
+    classes_str = ", ".join(classes)
+    prompt = (
+        f"You are a dermatology AI. Analyze this skin lesion image and classify it "
+        f"into exactly one of these categories: {classes_str}. "
+        f"Reply with ONLY the category name, nothing else."
+    )
+    uploaded_file = genai.upload_file(image_path)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+    response = model.generate_content([prompt, uploaded_file])
+    label = response.text.strip().lower()
+    # Fuzzy match to ensure we return a valid label
+    for c in classes:
+        if c in label:
+            return c
+    return label  # return as-is if no exact match
 
 
 def _build_report_pdf(label, filename, answer, name, age, gender, email):
