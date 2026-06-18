@@ -1,4 +1,4 @@
-import os
+	import os
 import urllib.request
 from flask import *
 import numpy as np
@@ -34,23 +34,29 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 
 
-print("Loading Cancer PDF...")
+retriever = None
+llm = None
 
-loader = PyPDFLoader("report.pdf")
-documents = loader.load()
-
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-docs = splitter.split_documents(documents)
-
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-vectorstore = FAISS.from_documents(docs, embeddings)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0,
-    google_api_key=GOOGLE_API_KEY
-)
+def init_rag():
+    global retriever, llm
+    if retriever is not None:
+        return
+    print("Loading Cancer PDF...")
+    if not os.path.exists("report.pdf"):
+        print("WARNING: report.pdf not found.")
+        return
+    loader = PyPDFLoader("report.pdf")
+    documents = loader.load()
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    docs = splitter.split_documents(documents)
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    vectorstore = FAISS.from_documents(docs, embeddings)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0,
+        google_api_key=GOOGLE_API_KEY
+    )
 
 prompt = ChatPromptTemplate.from_template("""
 You are an expert oncology medical AI.
