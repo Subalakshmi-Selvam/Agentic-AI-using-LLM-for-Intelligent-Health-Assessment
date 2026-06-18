@@ -22,7 +22,7 @@ from reportlab.lib.enums import TA_CENTER
 import sqlite3, io, os, re, random
 from datetime import datetime
 
-GOOGLE_API_KEY = "AIzaSyA0QNbJQD-wBCxY_AhokHYw4ruFJBKUxUg"
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 app = Flask(__name__)
 
 UPLOAD_FOLDER = 'static/uploads/'
