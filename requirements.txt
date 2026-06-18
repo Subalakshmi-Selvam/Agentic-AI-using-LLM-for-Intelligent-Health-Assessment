@@ -25,7 +25,7 @@ Pillow==10.3.0
 matplotlib==3.8.4
 
 # TensorFlow for skin disease model (CPU only, smaller build)
-tensorflow-cpu==2.16.1
-
+tensorflow-cpu==2.13.1
+tf-keras==2.16.0
 # Utilities
 scikit-learn==1.4.2
