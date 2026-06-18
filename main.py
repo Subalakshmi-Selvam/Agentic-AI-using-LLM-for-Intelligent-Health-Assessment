@@ -1,4 +1,4 @@
-	import os
+import os
 import urllib.request
 from flask import *
 import numpy as np
