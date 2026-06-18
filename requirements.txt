@@ -1,29 +1,31 @@
-# requirements.txt
+# Web framework
 flask==3.0.3
 werkzeug==3.0.3
 gunicorn==21.2.0
 
-# ML / CV
-numpy==1.26.4
-scipy==1.13.0
-scikit-learn==1.4.2
-scikit-image==0.22.0
-opencv-python-headless==4.9.0.80
-tensorflow==2.16.1
-keras==3.3.3
-
-# LangChain
+# LangChain - RAG pipeline (no torch/sentence-transformers)
 langchain==0.2.6
 langchain-community==0.2.6
 langchain-google-genai==1.0.6
 langchain-text-splitters==0.2.2
-
-# Vector DB & Embeddings
 faiss-cpu==1.8.0
-sentence-transformers==3.0.1
 
-# PDF & reporting
+# Google AI
+google-generativeai==0.5.4
+google-ai-generativelanguage==0.6.4
+
+# PDF loading & generation
 pypdf==4.2.0
 reportlab==4.2.0
-matplotlib==3.8.4
+
+# Image & numeric
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
 Pillow==10.3.0
+matplotlib==3.8.4
+
+# TensorFlow for skin disease model (CPU only, smaller build)
+tensorflow-cpu==2.16.1
+
+# Utilities
+scikit-learn==1.4.2
