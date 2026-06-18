@@ -260,6 +260,7 @@ def upload_pdf():
 # ==========================
 @app.route("/chat", methods=["POST"])
 def chat():
+	 init_rag()
     global vectorstore1
 
     if vectorstore1 is None:
